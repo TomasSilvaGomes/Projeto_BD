@@ -1,9 +1,7 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, PhotoImage
-import tkinter.font as tkFont
-
-
+from tkinter import ttk, messagebox, simpledialog, scrolledtext
 import pyodbc
+import tkinter.font as tkFont
 
 
 class DatabaseApp:
@@ -14,111 +12,48 @@ class DatabaseApp:
         self.conn = None
         self.cursor = None
 
-        self.setup_home_page()
+        self.create_menu()
 
-    def setup_home_page(self):
-        # Frame inicial
-        self.home_frame = tk.Frame(self.root)
-        self.home_frame.pack(fill="both", expand=True)
+    def create_menu(self):
+        menu_bar = tk.Menu(self.root)
 
-        # Adicionar imagem
-        try:
-            # Substitua 'image.png' pelo caminho da sua imagem
-            self.image = PhotoImage(file="projeto.png")
-            image_label = tk.Label(self.home_frame, image=self.image)
-            image_label.pack(pady=10)
-        except Exception as e:
-            messagebox.showwarning("Aviso", f"Erro ao carregar a imagem: {e}")
+        # Menu de Conexão
+        db_menu = tk.Menu(menu_bar, tearoff=0)
+        db_menu.add_command(label="Ligar à Base de Dados", command=self.connect_to_db)
+        db_menu.add_separator()
+        db_menu.add_command(label="Sair", command=self.root.quit)
+        menu_bar.add_cascade(label="Início", menu=db_menu)
 
-        # Botão para ir à página de conexão
-        connect_button = ttk.Button(self.home_frame, text="Ligar à Base de Dados", command=self.show_connect_page)
-        connect_button.pack(pady=20)
+        # Menu CRUD
+        crud_menu = tk.Menu(menu_bar, tearoff=0)
+        crud_menu.add_command(label="Adicionar Dados", command=self.add_data)
+        crud_menu.add_command(label="Atualizar Dados", command=self.update_data)
+        crud_menu.add_command(label="Apagar Dados", command=self.delete_data)
+        crud_menu.add_command(label="Visualizar Dados", command=self.view_data)
+        crud_menu.add_command(label="Query Genérica", command=self.generic_query)
+        menu_bar.add_cascade(label="Operações CRUD", menu=crud_menu)
 
-    def show_connect_page(self):
-        # Ocultar página inicial
-        self.home_frame.pack_forget()
+        # Menu About
+        about_menu = tk.Menu(menu_bar, tearoff=0)
+        about_menu.add_command(label="Sobre",
+                               command=lambda: messagebox.showinfo("Sobre", "Aplicação CRUD com Tkinter e PyODBC"))
+        menu_bar.add_cascade(label="Ajuda", menu=about_menu)
 
-        # Frame da página de conexão
-        self.connect_frame = tk.Frame(self.root)
-        self.connect_frame.pack(fill="both", expand=True)
-
-        # Campos de entrada
-        tk.Label(self.connect_frame, text="IP do Servidor:").grid(row=0, column=0, pady=5, padx=5, sticky="e")
-        self.ip_entry = tk.Entry(self.connect_frame)
-        self.ip_entry.grid(row=0, column=1, pady=5, padx=5)
-
-        tk.Label(self.connect_frame, text="Nome do Utilizador:").grid(row=1, column=0, pady=5, padx=5, sticky="e")
-        self.user_entry = tk.Entry(self.connect_frame)
-        self.user_entry.grid(row=1, column=1, pady=5, padx=5)
-
-        tk.Label(self.connect_frame, text="Password:").grid(row=2, column=0, pady=5, padx=5, sticky="e")
-        self.pass_entry = tk.Entry(self.connect_frame, show="*")
-        self.pass_entry.grid(row=2, column=1, pady=5, padx=5)
-
-        tk.Label(self.connect_frame, text="Nome da Base de Dados:").grid(row=3, column=0, pady=5, padx=5, sticky="e")
-        self.db_entry = tk.Entry(self.connect_frame)
-        self.db_entry.grid(row=3, column=1, pady=5, padx=5)
-
-        # Botão para conectar
-        connect_button = ttk.Button(self.connect_frame, text="Conectar", command=self.connect_to_db)
-        connect_button.grid(row=4, column=0, columnspan=2, pady=10)
-
-        # Botão para voltar à página inicial
-        back_button = ttk.Button(self.connect_frame, text="Voltar", command=self.show_home_page)
-        back_button.grid(row=5, column=0, columnspan=2, pady=10)
-
-    def show_home_page(self):
-        # Alternar para página inicial
-        self.connect_frame.pack_forget()
-        self.home_frame.pack(fill="both", expand=True)
-
-    def show_menu_page(self):
-        # Ocultar aba de conexão
-        self.connect_frame.pack_forget()
-
-        # Frame da página do menu principal
-        self.menu_frame = tk.Frame(self.root)
-        self.menu_frame.pack(fill="both", expand=True)
-
-        # Adicionar opções
-        ttk.Label(self.menu_frame, text="Menu Principal", font=("Arial", 16)).pack(pady=20)
-
-        add_button = ttk.Button(self.menu_frame, text="Adicionar Dados", command=self.add_data)
-        add_button.pack(pady=5)
-
-        delete_button = ttk.Button(self.menu_frame, text="Apagar Dados", command=self.delete_data)
-        delete_button.pack(pady=5)
-
-        view_button = ttk.Button(self.menu_frame, text="Visualizar Dados", command=self.view_data)
-        view_button.pack(pady=5)
-
-        # Botão para desconectar
-        disconnect_button = ttk.Button(self.menu_frame, text="Desconectar", command=self.disconnect_db)
-        disconnect_button.pack(pady=20)
+        self.root.config(menu=menu_bar)
 
     def connect_to_db(self):
         try:
-            ip = self.ip_entry.get()
-            user = self.user_entry.get()
-            password = self.pass_entry.get()
-            database = self.db_entry.get()
+            ip = simpledialog.askstring("Ligação", "Insira o IP do servidor:")
+            user = simpledialog.askstring("Ligação", "Insira o utilizador:")
+            password = simpledialog.askstring("Ligação", "Insira a password:", show="*")
+            database = simpledialog.askstring("Ligação", "Insira o nome da base de dados:")
 
             self.conn = pyodbc.connect(
                 f"DRIVER={{SQL Server}};SERVER={ip};DATABASE={database};UID={user};PWD={password}")
             self.cursor = self.conn.cursor()
             messagebox.showinfo("Sucesso", "Ligação efetuada com sucesso!")
-            self.show_menu_page()
         except Exception as e:
             messagebox.showerror("Erro na ligação", f"Erro no acesso à base de dados: {e}")
-
-    def disconnect_db(self):
-        if self.conn:
-            self.conn.close()
-            self.conn = None
-            self.cursor = None
-            messagebox.showinfo("Desconectado", "Conexão encerrada com sucesso!")
-        self.menu_frame.pack_forget()
-        self.show_home_page()
 
     def add_data(self):
         if self.cursor:
@@ -186,6 +121,91 @@ class DatabaseApp:
 
                 # Frame para entradas dinâmicas
                 input_frame = tk.Frame(add_window)
+                input_frame.pack(pady=10)
+
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro ao obter tabelas: {e}")
+        else:
+            messagebox.showwarning("Aviso", "Ligue-se à base de dados primeiro.")
+
+    def update_data(self):
+        if self.cursor:
+            try:
+                # Obter tabelas do banco de dados
+                self.cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")
+                tables = [row.TABLE_NAME for row in self.cursor.fetchall()]
+
+                def fetch_columns():
+                    # Obter a tabela selecionada
+                    selected_table = table_dropdown.get()
+                    if selected_table:
+                        try:
+                            # Obter colunas da tabela selecionada
+                            self.cursor.execute(
+                                f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected_table}'")
+                            columns = [row.COLUMN_NAME for row in self.cursor.fetchall()]
+
+                            # Limpar entradas anteriores
+                            for widget in input_frame.winfo_children():
+                                widget.destroy()
+
+                            # Criar campos de entrada para cada coluna
+                            set_entries = {}
+                            for col in columns:
+                                tk.Label(input_frame, text=f"Atualizar {col} (deixe vazio para ignorar):").pack()
+                                entry = tk.Entry(input_frame)
+                                entry.pack(pady=2)
+                                set_entries[col] = entry
+
+                            # Campo para condição WHERE
+                            tk.Label(input_frame, text="Condição (WHERE):").pack()
+                            where_entry = tk.Entry(input_frame)
+                            where_entry.pack(pady=5)
+
+                            # Botão para atualizar dados
+                            def execute_update():
+                                set_clause = ", ".join(
+                                    f"{col}='{set_entries[col].get()}'" for col in columns if set_entries[col].get())
+                                where_clause = where_entry.get()
+
+                                if not set_clause:
+                                    messagebox.showwarning("Aviso", "Insira pelo menos um valor para atualizar.")
+                                    return
+
+                                query = f"UPDATE {selected_table} SET {set_clause}"
+                                if where_clause:
+                                    query += f" WHERE {where_clause}"
+                                try:
+                                    self.cursor.execute(query)
+                                    self.conn.commit()
+                                    messagebox.showinfo("Sucesso", "Dados atualizados com sucesso!")
+                                    update_window.destroy()
+                                except Exception as e:
+                                    messagebox.showerror("Erro", f"Erro ao atualizar dados: {e}")
+
+                            # Botão para salvar
+                            update_button = ttk.Button(input_frame, text="Salvar Alterações", command=execute_update)
+                            update_button.pack(pady=10)
+
+                        except Exception as e:
+                            messagebox.showerror("Erro", f"Erro ao obter colunas: {e}")
+                    else:
+                        messagebox.showwarning("Aviso", "Selecione uma tabela.")
+
+                # Criar janela para atualizar dados
+                update_window = tk.Toplevel(self.root)
+                update_window.title("Atualizar Dados")
+
+                # Dropdown para selecionar tabela
+                table_dropdown = ttk.Combobox(update_window, values=tables, state="readonly")
+                table_dropdown.pack(pady=5)
+
+                # Botão para carregar colunas
+                load_button = ttk.Button(update_window, text="Carregar Colunas", command=fetch_columns)
+                load_button.pack(pady=5)
+
+                # Frame para entradas dinâmicas
+                input_frame = tk.Frame(update_window)
                 input_frame.pack(pady=10)
 
             except Exception as e:
@@ -320,6 +340,27 @@ class DatabaseApp:
         else:
             messagebox.showwarning("Aviso", "Ligue-se à base de dados primeiro.")
 
+    def generic_query(self):
+        if self.cursor:
+            query = simpledialog.askstring("Query Genérica", "Escreva a query SQL:")
+            try:
+                self.cursor.execute(query)
+                columns = [desc[0] for desc in self.cursor.description]
+                rows = self.cursor.fetchall()
+
+                result_window = tk.Toplevel(self.root)
+                result_window.title("Resultados da Query Genérica")
+
+                output = scrolledtext.ScrolledText(result_window, width=80, height=20)
+                output.pack(pady=5)
+                output.insert(tk.END, f"Colunas: {', '.join(columns)}\n\n")
+                for row in rows:
+                    output.insert(tk.END, f"{row}\n")
+
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro na execução da query: {e}")
+        else:
+            messagebox.showwarning("Aviso", "Ligue-se à base de dados primeiro.")
 
 
 if __name__ == "__main__":
