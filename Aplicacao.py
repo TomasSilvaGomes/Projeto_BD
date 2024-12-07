@@ -78,7 +78,7 @@ class DatabaseApp:
         self.home_frame.pack_forget()
 
         # Frame do menu principal
-        self.menu_frame = tk.Frame(self.root)
+        self.menu_frame = tk.Frame(self.root, bg="#33CCFF")
         self.menu_frame.pack(fill="both", expand=True)
 
         # Adicionar título
@@ -86,7 +86,7 @@ class DatabaseApp:
 
         # Botões do menu
         buttons_frame = tk.Frame(self.menu_frame)
-        buttons_frame.pack(pady=30)
+        buttons_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         style = ttk.Style()
         style.configure("MenuButton.TButton",
@@ -95,23 +95,29 @@ class DatabaseApp:
                         width=15,
                         anchor="center",
                         background="#33CCFF",
-                        foreground="blue",
+                        foreground="Black",
                         borderwidth=3)
 
+        style.map("MenuButton.TButton",
+                  background=[("active", "#33CCFF")])
+
+        buttons_frame = tk.Frame(self.menu_frame, bg="#33CCFF")  # Fundo igual ao frame
+        buttons_frame.pack(pady=30)
+
         add_button = ttk.Button(buttons_frame, text="Inserir Dados", command=self.add_data, style="MenuButton.TButton")
-        add_button.pack(side="left", padx=10)
+        add_button.pack(side="top", pady=20)  # Usar "top" e espaçamento para organizar
 
         delete_button = ttk.Button(buttons_frame, text="Remover Dados", command=self.delete_data,
                                    style="MenuButton.TButton")
-        delete_button.pack(side="left", padx=10)
+        delete_button.pack(side="top", pady=20)
 
         view_button = ttk.Button(buttons_frame, text="Visualizar Dados", command=self.view_data,
                                  style="MenuButton.TButton")
-        view_button.pack(side="left", padx=10)
+        view_button.pack(side="top", pady=20)
 
         disconnect_button = ttk.Button(buttons_frame, text="Desconectar", command=self.disconnect_db,
                                        style="MenuButton.TButton")
-        disconnect_button.pack(side="left", padx=10)
+        disconnect_button.pack(side="top", pady=20)
 
     def connect_to_db(self):
         try:
@@ -139,6 +145,7 @@ class DatabaseApp:
         self.setup_home_page()
 
     def add_data(self):
+
         if self.cursor:
             try:
                 # Obter tabelas do banco de dados
@@ -193,6 +200,7 @@ class DatabaseApp:
                 # Criar janela para adicionar dados
                 add_window = tk.Toplevel(self.root)
                 add_window.title("Adicionar Dados")
+                add_window.geometry("300x225")
 
                 # Dropdown para selecionar tabela
                 table_dropdown = ttk.Combobox(add_window, values=tables, state="readonly")
