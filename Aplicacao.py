@@ -222,32 +222,54 @@ class DatabaseApp:
                     # Obter a tabela selecionada
                     selected_table = table_dropdown.get()
                     if selected_table:
-                        # Limpar entradas anteriores
-                        for widget in input_frame.winfo_children():
-                            widget.destroy()
+                        # Obter colunas da tabela selecionada
+                        self.cursor.execute(
+                            f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected_table}'")
+                        columns = [row.COLUMN_NAME for row in self.cursor.fetchall()]
 
-                        # Campo para condição WHERE
-                        tk.Label(input_frame, text="Condição (WHERE):").pack()
-                        where_entry = tk.Entry(input_frame)
-                        where_entry.pack(pady=5)
+                        if columns:
+                            # Limpar entradas anteriores
+                            for widget in input_frame.winfo_children():
+                                widget.destroy()
 
-                        # Botão para excluir dados
-                        def execute_delete():
-                            where_clause = where_entry.get()
-                            query = f"DELETE FROM {selected_table}"
-                            if where_clause:
-                                query += f" WHERE {where_clause}"
-                            try:
-                                self.cursor.execute(query)
-                                self.conn.commit()
-                                messagebox.showinfo("Sucesso", "Dados apagados com sucesso!")
-                                delete_window.destroy()
-                            except Exception as e:
-                                messagebox.showerror("Erro", f"Erro ao apagar dados: {e}")
+                            tk.Label(input_frame, text="Preencha os valores dos atributos para exclusão:").pack(pady=5)
 
-                        # Botão para confirmar exclusão
-                        delete_button = ttk.Button(input_frame, text="Apagar Dados", command=execute_delete)
-                        delete_button.pack(pady=10)
+                            # Dicionário para armazenar os campos de entrada
+                            entries = {}
+
+                            for column in columns:
+                                tk.Label(input_frame, text=f"{column}:").pack()
+                                entry = tk.Entry(input_frame)
+                                entry.pack(pady=2)
+                                entries[column] = entry
+
+                            # Botão para executar exclusão
+                            def execute_delete():
+                                # Construir cláusula WHERE
+                                where_clauses = []
+                                for column, entry in entries.items():
+                                    value = entry.get()
+                                    if value:
+                                        where_clauses.append(f"{column} = '{value}'")
+
+                                if where_clauses:
+                                    where_clause = " AND ".join(where_clauses)
+                                    query = f"DELETE FROM {selected_table} WHERE {where_clause}"
+                                    try:
+                                        self.cursor.execute(query)
+                                        self.conn.commit()
+                                        messagebox.showinfo("Sucesso", "Dados apagados com sucesso!")
+                                        delete_window.destroy()
+                                    except Exception as e:
+                                        messagebox.showerror("Erro", f"Erro ao apagar dados: {e}")
+                                else:
+                                    messagebox.showwarning("Aviso", "Nenhum critério especificado para exclusão.")
+
+                            # Botão para confirmar exclusão
+                            delete_button = ttk.Button(input_frame, text="Apagar Dados", command=execute_delete)
+                            delete_button.pack(pady=10)
+                        else:
+                            messagebox.showwarning("Aviso", "A tabela selecionada não possui colunas.")
 
                     else:
                         messagebox.showwarning("Aviso", "Selecione uma tabela.")
@@ -255,13 +277,15 @@ class DatabaseApp:
                 # Criar janela para apagar dados
                 delete_window = tk.Toplevel(self.root)
                 delete_window.title("Apagar Dados")
+                delete_window.geometry("500x400")
 
                 # Dropdown para selecionar tabela
+                tk.Label(delete_window, text="Selecione uma tabela:").pack(pady=5)
                 table_dropdown = ttk.Combobox(delete_window, values=tables, state="readonly")
                 table_dropdown.pack(pady=5)
 
-                # Botão para carregar opção de exclusão
-                load_button = ttk.Button(delete_window, text="Configurar Exclusão", command=fetch_columns)
+                # Botão para carregar colunas
+                load_button = ttk.Button(delete_window, text="Carregar Atributos", command=fetch_columns)
                 load_button.pack(pady=5)
 
                 # Frame para entradas dinâmicas
