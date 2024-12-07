@@ -1,8 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, PhotoImage
 import tkinter.font as tkFont
-
-
+from tkinter import ttk, messagebox, PhotoImage
 import pyodbc
 
 
@@ -20,81 +18,100 @@ class DatabaseApp:
         # Frame inicial
         self.home_frame = tk.Frame(self.root)
         self.home_frame.pack(fill="both", expand=True)
+        self.root.geometry("1920x1080")
 
         # Adicionar imagem
         try:
             # Substitua 'image.png' pelo caminho da sua imagem
             self.image = PhotoImage(file="projeto.png")
             image_label = tk.Label(self.home_frame, image=self.image)
-            image_label.pack(pady=10)
+            image_label.place(relwidth=1, relheight=1)
         except Exception as e:
             messagebox.showwarning("Aviso", f"Erro ao carregar a imagem: {e}")
 
         # Botão para ir à página de conexão
-        connect_button = ttk.Button(self.home_frame, text="Ligar à Base de Dados", command=self.show_connect_page)
-        connect_button.pack(pady=20)
+        style = ttk.Style()
+        style.configure("MainButton.TButton",
+                        font=("Times New Roman", 16, "bold"),
+                        padding=15,
+                        width=20,
+                        anchor="center",
+                        background="#33CCFF",
+                        foreground="black",
+                        borderwidth=3)
+        connect_button = ttk.Button(self.home_frame, text="Ligar à Base de Dados", command=self.show_connect_page,
+                                     style="MainButton.TButton")
+        connect_button.place(relx=0.85, rely=0.5, anchor="center")
 
     def show_connect_page(self):
-        # Ocultar página inicial
-        self.home_frame.pack_forget()
+        # Criar uma nova janela
+        self.connect_window = tk.Toplevel(self.root)
+        self.connect_window.title("Conexão à Base de Dados")
+        self.connect_window.geometry("300x225")
 
-        # Frame da página de conexão
-        self.connect_frame = tk.Frame(self.root)
-        self.connect_frame.pack(fill="both", expand=True)
-
-        # Campos de entrada
-        tk.Label(self.connect_frame, text="IP do Servidor:").grid(row=0, column=0, pady=5, padx=5, sticky="e")
-        self.ip_entry = tk.Entry(self.connect_frame)
+        # Adicionar campos e botões na nova janela
+        tk.Label(self.connect_window, text="IP do Servidor:").grid(row=0, column=0, pady=5, padx=5, sticky="e")
+        self.ip_entry = tk.Entry(self.connect_window)
         self.ip_entry.grid(row=0, column=1, pady=5, padx=5)
 
-        tk.Label(self.connect_frame, text="Nome do Utilizador:").grid(row=1, column=0, pady=5, padx=5, sticky="e")
-        self.user_entry = tk.Entry(self.connect_frame)
+        tk.Label(self.connect_window, text="Nome do Utilizador:").grid(row=1, column=0, pady=5, padx=5, sticky="e")
+        self.user_entry = tk.Entry(self.connect_window)
         self.user_entry.grid(row=1, column=1, pady=5, padx=5)
 
-        tk.Label(self.connect_frame, text="Password:").grid(row=2, column=0, pady=5, padx=5, sticky="e")
-        self.pass_entry = tk.Entry(self.connect_frame, show="*")
+        tk.Label(self.connect_window, text="Password:").grid(row=2, column=0, pady=5, padx=5, sticky="e")
+        self.pass_entry = tk.Entry(self.connect_window, show="*")
         self.pass_entry.grid(row=2, column=1, pady=5, padx=5)
 
-        tk.Label(self.connect_frame, text="Nome da Base de Dados:").grid(row=3, column=0, pady=5, padx=5, sticky="e")
-        self.db_entry = tk.Entry(self.connect_frame)
+        tk.Label(self.connect_window, text="Nome da Base de Dados:").grid(row=3, column=0, pady=5, padx=5, sticky="e")
+        self.db_entry = tk.Entry(self.connect_window)
         self.db_entry.grid(row=3, column=1, pady=5, padx=5)
 
-        # Botão para conectar
-        connect_button = ttk.Button(self.connect_frame, text="Conectar", command=self.connect_to_db)
+        # Botões na nova janela
+        connect_button = ttk.Button(self.connect_window, text="Conectar", command=self.connect_to_db)
         connect_button.grid(row=4, column=0, columnspan=2, pady=10)
 
-        # Botão para voltar à página inicial
-        back_button = ttk.Button(self.connect_frame, text="Voltar", command=self.show_home_page)
+        back_button = ttk.Button(self.connect_window, text="Voltar", command=self.connect_window.destroy)
         back_button.grid(row=5, column=0, columnspan=2, pady=10)
 
-    def show_home_page(self):
-        # Alternar para página inicial
-        self.connect_frame.pack_forget()
-        self.home_frame.pack(fill="both", expand=True)
-
     def show_menu_page(self):
-        # Ocultar aba de conexão
-        self.connect_frame.pack_forget()
+        # Ocultar a interface inicial
+        self.home_frame.pack_forget()
 
-        # Frame da página do menu principal
+        # Frame do menu principal
         self.menu_frame = tk.Frame(self.root)
         self.menu_frame.pack(fill="both", expand=True)
 
-        # Adicionar opções
-        ttk.Label(self.menu_frame, text="Menu Principal", font=("Arial", 16)).pack(pady=20)
+        # Adicionar título
+        ttk.Label(self.menu_frame, text="Menu Principal", style='primary.Inverse.TLabel', font=("Times New Roman", 20)).pack(pady=20)
 
-        add_button = ttk.Button(self.menu_frame, text="Adicionar Dados", command=self.add_data)
-        add_button.pack(pady=5)
+        # Botões do menu
+        buttons_frame = tk.Frame(self.menu_frame)
+        buttons_frame.pack(pady=30)
 
-        delete_button = ttk.Button(self.menu_frame, text="Apagar Dados", command=self.delete_data)
-        delete_button.pack(pady=5)
+        style = ttk.Style()
+        style.configure("MenuButton.TButton",
+                        font=("Times New Roman", 12, "bold"),
+                        padding=20,
+                        width=15,
+                        anchor="center",
+                        background="#33CCFF",
+                        foreground="blue",
+                        borderwidth=3)
 
-        view_button = ttk.Button(self.menu_frame, text="Visualizar Dados", command=self.view_data)
-        view_button.pack(pady=5)
+        add_button = ttk.Button(buttons_frame, text="Inserir Dados", command=self.add_data, style="MenuButton.TButton")
+        add_button.pack(side="left", padx=10)
 
-        # Botão para desconectar
-        disconnect_button = ttk.Button(self.menu_frame, text="Desconectar", command=self.disconnect_db)
-        disconnect_button.pack(pady=20)
+        delete_button = ttk.Button(buttons_frame, text="Remover Dados", command=self.delete_data,
+                                   style="MenuButton.TButton")
+        delete_button.pack(side="left", padx=10)
+
+        view_button = ttk.Button(buttons_frame, text="Visualizar Dados", command=self.view_data,
+                                 style="MenuButton.TButton")
+        view_button.pack(side="left", padx=10)
+
+        disconnect_button = ttk.Button(buttons_frame, text="Desconectar", command=self.disconnect_db,
+                                       style="MenuButton.TButton")
+        disconnect_button.pack(side="left", padx=10)
 
     def connect_to_db(self):
         try:
@@ -107,18 +124,19 @@ class DatabaseApp:
                 f"DRIVER={{SQL Server}};SERVER={ip};DATABASE={database};UID={user};PWD={password}")
             self.cursor = self.conn.cursor()
             messagebox.showinfo("Sucesso", "Ligação efetuada com sucesso!")
+            self.connect_window.destroy()
             self.show_menu_page()
         except Exception as e:
-            messagebox.showerror("Erro na ligação", f"Erro no acesso à base de dados: {e}")
+            messagebox.showerror("Erro", f"Erro ao conectar: {e}")
 
     def disconnect_db(self):
         if self.conn:
             self.conn.close()
             self.conn = None
             self.cursor = None
-            messagebox.showinfo("Desconectado", "Conexão encerrada com sucesso!")
+            messagebox.showinfo("Desconectado", "Conexão encerrada.")
         self.menu_frame.pack_forget()
-        self.show_home_page()
+        self.setup_home_page()
 
     def add_data(self):
         if self.cursor:
@@ -319,7 +337,6 @@ class DatabaseApp:
                 messagebox.showerror("Erro", f"Erro ao obter tabelas: {e}")
         else:
             messagebox.showwarning("Aviso", "Ligue-se à base de dados primeiro.")
-
 
 
 if __name__ == "__main__":
