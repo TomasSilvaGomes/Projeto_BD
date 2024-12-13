@@ -23,11 +23,20 @@ class DatabaseApp:
         # Adicionar imagem
         try:
             # Substitua 'image.png' pelo caminho da sua imagem
-            self.image = PhotoImage(file="projeto.png")
+            self.image = PhotoImage(file="pp.png")
             image_label = tk.Label(self.home_frame, image=self.image)
             image_label.place(relwidth=1, relheight=1)
         except Exception as e:
             messagebox.showwarning("Aviso", f"Erro ao carregar a imagem: {e}")
+
+        root.attributes("-fullscreen", True)
+
+        def exit_fullscreen(event):
+            root.attributes("-fullscreen", False)
+            
+
+        # Vincular a tecla Esc para sair do fullscreen
+        root.bind("<Escape>", exit_fullscreen)
 
         # Botão para ir à página de conexão
         style = ttk.Style()
