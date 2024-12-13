@@ -7,7 +7,7 @@ import pyodbc
 class DatabaseApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Cidade Inteligente")
+        self.root.title("Covilhã Mobilidade")
 
         self.conn = None
         self.cursor = None
@@ -77,9 +77,18 @@ class DatabaseApp:
         # Ocultar a interface inicial
         self.home_frame.pack_forget()
 
+
         # Frame do menu principal
-        self.menu_frame = tk.Frame(self.root, bg="#33CCFF")
+        self.menu_frame = tk.Frame(self.root)
         self.menu_frame.pack(fill="both", expand=True)
+
+        # Adicionar imagem
+        try:
+            self.image = PhotoImage(file="projeto.png")
+            image_label = tk.Label(self.home_frame, image=self.image)
+            image_label.place(relwidth=1, relheight=1)
+        except Exception as e:
+            messagebox.showwarning("Aviso", f"Erro ao carregar a imagem: {e}")
 
         # Adicionar título
         ttk.Label(self.menu_frame, text="Menu Principal", style='primary.Inverse.TLabel', font=("Times New Roman", 20)).pack(pady=20)
@@ -101,23 +110,25 @@ class DatabaseApp:
         style.map("MenuButton.TButton",
                   background=[("active", "#33CCFF")])
 
-        buttons_frame = tk.Frame(self.menu_frame, bg="#33CCFF")  # Fundo igual ao frame
-        buttons_frame.pack(pady=30)
 
         add_button = ttk.Button(buttons_frame, text="Inserir Dados", command=self.add_data, style="MenuButton.TButton")
-        add_button.pack(side="top", pady=20)  # Usar "top" e espaçamento para organizar
+        add_button.pack(side="left", pady=20)  # Usar "top" e espaçamento para organizar
 
         delete_button = ttk.Button(buttons_frame, text="Remover Dados", command=self.delete_data,
                                    style="MenuButton.TButton")
-        delete_button.pack(side="top", pady=20)
+        delete_button.pack(side="left", pady=20)
 
         view_button = ttk.Button(buttons_frame, text="Visualizar Dados", command=self.view_data,
                                  style="MenuButton.TButton")
-        view_button.pack(side="top", pady=20)
+        view_button.pack(side="left", pady=20)
+
+        update_button = ttk.Button(buttons_frame, text="Atualizar Dados", command=self.update_data,
+                                   style="MenuButton.TButton")
+        update_button.pack(side="left", pady=20)
 
         disconnect_button = ttk.Button(buttons_frame, text="Desconectar", command=self.disconnect_db,
                                        style="MenuButton.TButton")
-        disconnect_button.pack(side="top", pady=20)
+        disconnect_button.pack(expand=True, side="left", pady=20)
 
     def connect_to_db(self):
         try:
@@ -364,6 +375,108 @@ class DatabaseApp:
                 tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
                 scroll_y.pack(side="right", fill="y")
                 scroll_x.pack(side="bottom", fill="x")
+
+            except Exception as e:
+                messagebox.showerror("Erro", f"Erro ao obter tabelas: {e}")
+        else:
+            messagebox.showwarning("Aviso", "Ligue-se à base de dados primeiro.")
+
+    def update_data(self):
+        if self.cursor:
+            try:
+                # Fetch tables from the database
+                self.cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")
+                tables = [row.TABLE_NAME for row in self.cursor.fetchall()]
+
+                def fetch_columns():
+                    selected_table = table_dropdown.get()
+                    if selected_table:
+                        try:
+                            # Fetch columns of the selected table, excluding those starting with 'id'
+                            self.cursor.execute(
+                                f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected_table}'")
+                            columns = [row.COLUMN_NAME for row in self.cursor.fetchall() if
+                                       not row.COLUMN_NAME.lower().startswith('id')]
+
+                            # Clear previous widgets
+                            for widget in input_frame.winfo_children():
+                                widget.destroy()
+
+                            # Create input fields for WHERE clause and updated values
+                            entries_where = {}
+                            entries_update = {}
+
+                            tk.Label(input_frame,
+                                     text="Especifique os critérios para selecionar registros (WHERE):").pack(pady=5)
+                            for col in columns:
+                                tk.Label(input_frame, text=f"{col} (WHERE):").pack()
+                                entry = tk.Entry(input_frame)
+                                entry.pack(pady=2)
+                                entries_where[col] = entry
+
+                            tk.Label(input_frame, text="Atualize os valores para as colunas desejadas:").pack(pady=10)
+                            for col in columns:
+                                tk.Label(input_frame, text=f"{col} (SET):").pack()
+                                entry = tk.Entry(input_frame)
+                                entry.pack(pady=2)
+                                entries_update[col] = entry
+
+                            def execute_update():
+                                # Build WHERE clause
+                                where_clauses = []
+                                for column, entry in entries_where.items():
+                                    value = entry.get()
+                                    if value:
+                                        where_clauses.append(f"{column} = '{value}'")
+
+                                # Build SET clause
+                                set_clauses = []
+                                for column, entry in entries_update.items():
+                                    value = entry.get()
+                                    if value:
+                                        set_clauses.append(f"{column} = '{value}'")
+
+                                if where_clauses and set_clauses:
+                                    where_clause = " AND ".join(where_clauses)
+                                    set_clause = ", ".join(set_clauses)
+                                    query = f"UPDATE {selected_table} SET {set_clause} WHERE {where_clause}"
+                                    try:
+                                        self.cursor.execute(query)
+                                        self.conn.commit()
+                                        messagebox.showinfo("Sucesso", "Dados atualizados com sucesso!")
+                                        update_window.destroy()
+                                    except Exception as e:
+                                        messagebox.showerror("Erro", f"Erro ao atualizar dados: {e}")
+                                else:
+                                    messagebox.showwarning("Aviso",
+                                                           "Especifique critérios para WHERE e valores para SET.")
+
+                            # Button to execute the update query
+                            update_button = ttk.Button(input_frame, text="Atualizar Dados", command=execute_update)
+                            update_button.pack(pady=10)
+
+                        except Exception as e:
+                            messagebox.showerror("Erro", f"Erro ao obter colunas: {e}")
+                    else:
+                        messagebox.showwarning("Aviso", "Selecione uma tabela.")
+
+                # Create update data window
+                update_window = tk.Toplevel(self.root)
+                update_window.title("Atualizar Dados")
+                update_window.geometry("500x500")
+
+                # Dropdown to select table
+                tk.Label(update_window, text="Selecione uma tabela:").pack(pady=5)
+                table_dropdown = ttk.Combobox(update_window, values=tables, state="readonly")
+                table_dropdown.pack(pady=5)
+
+                # Button to load columns
+                load_button = ttk.Button(update_window, text="Carregar Colunas", command=fetch_columns)
+                load_button.pack(pady=5)
+
+                # Frame for dynamic inputs
+                input_frame = tk.Frame(update_window)
+                input_frame.pack(pady=10)
 
             except Exception as e:
                 messagebox.showerror("Erro", f"Erro ao obter tabelas: {e}")
