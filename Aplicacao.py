@@ -23,9 +23,15 @@ class DatabaseApp:
         # Adicionar imagem
         try:
             # Substitua 'image.png' pelo caminho da sua imagem
+<<<<<<< Updated upstream
             self.image = PhotoImage(file="pp.png")
+=======
+            self.image = PhotoImage(file="BD.png")
+>>>>>>> Stashed changes
             image_label = tk.Label(self.home_frame, image=self.image)
+            #put the image in 1920x1080
             image_label.place(relwidth=1, relheight=1)
+
         except Exception as e:
             messagebox.showwarning("Aviso", f"Erro ao carregar a imagem: {e}")
 
@@ -43,14 +49,14 @@ class DatabaseApp:
         style.configure("MainButton.TButton",
                         font=("Times New Roman", 16, "bold"),
                         padding=15,
-                        width=20,
+                        width=30,
                         anchor="center",
                         background="#33CCFF",
                         foreground="black",
                         borderwidth=3)
         connect_button = ttk.Button(self.home_frame, text="Ligar à Base de Dados", command=self.show_connect_page,
                                      style="MainButton.TButton")
-        connect_button.place(relx=0.85, rely=0.5, anchor="center")
+        connect_button.place(relx=0.89, rely=0.83, anchor="center")
 
     def show_connect_page(self):
         # Criar uma nova janela
@@ -91,14 +97,6 @@ class DatabaseApp:
         self.menu_frame = tk.Frame(self.root)
         self.menu_frame.pack(fill="both", expand=True)
 
-        # Adicionar imagem
-        try:
-            self.image = PhotoImage(file="projeto.png")
-            image_label = tk.Label(self.home_frame, image=self.image)
-            image_label.place(relwidth=1, relheight=1)
-        except Exception as e:
-            messagebox.showwarning("Aviso", f"Erro ao carregar a imagem: {e}")
-
         # Adicionar título
         ttk.Label(self.menu_frame, text="Menu Principal", style='primary.Inverse.TLabel', font=("Times New Roman", 20)).pack(pady=20)
 
@@ -112,12 +110,12 @@ class DatabaseApp:
                         padding=20,
                         width=15,
                         anchor="center",
-                        background="#33CCFF",
+                        background="#1E1E1E",
                         foreground="Black",
                         borderwidth=3)
 
         style.map("MenuButton.TButton",
-                  background=[("active", "#33CCFF")])
+                  background=[("active", "#1e1e1e")])
 
 
         add_button = ttk.Button(buttons_frame, text="Inserir Dados", command=self.add_data, style="MenuButton.TButton")
