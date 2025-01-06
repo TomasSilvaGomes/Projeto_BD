@@ -23,11 +23,7 @@ class DatabaseApp:
         # Adicionar imagem
         try:
             # Substitua 'image.png' pelo caminho da sua imagem
-<<<<<<< Updated upstream
-            self.image = PhotoImage(file="pp.png")
-=======
             self.image = PhotoImage(file="BD.png")
->>>>>>> Stashed changes
             image_label = tk.Label(self.home_frame, image=self.image)
             #put the image in 1920x1080
             image_label.place(relwidth=1, relheight=1)
@@ -39,7 +35,7 @@ class DatabaseApp:
 
         def exit_fullscreen(event):
             root.attributes("-fullscreen", False)
-            
+
 
         # Vincular a tecla Esc para sair do fullscreen
         root.bind("<Escape>", exit_fullscreen)
