@@ -129,6 +129,11 @@ class DatabaseApp:
                                    style="MenuButton.TButton")
         update_button.pack(side="left", pady=20)
 
+        perguntas_button = ttk.Button(buttons_frame, text="Perguntas", command=self.show_perguntas,
+                                   style="MenuButton.TButton")
+        perguntas_button.pack(side="left", pady=20)
+
+
         disconnect_button = ttk.Button(buttons_frame, text="Desconectar", command=self.disconnect_db,
                                        style="MenuButton.TButton")
         disconnect_button.pack(expand=True, side="left", pady=20)
@@ -485,6 +490,671 @@ class DatabaseApp:
                 messagebox.showerror("Erro", f"Erro ao obter tabelas: {e}")
         else:
             messagebox.showwarning("Aviso", "Ligue-se à base de dados primeiro.")
+
+    def show_perguntas(self):
+        # nova interface é fullscreen e não tem barra de título
+        self.root.attributes("-fullscreen", True)
+        def exit_fullscreen(event):
+            self.root.attributes("-fullscreen", False)
+
+        self.root.bind("<Escape>", exit_fullscreen)
+
+        # Frame do menu perguntas
+        self.menu_frame = tk.Frame(self.root)
+        self.menu_frame.pack(fill="both", expand=True)
+
+        # Criar uma nova janela
+        self.perguntas_window = tk.Toplevel(self.root)
+        self.perguntas_window.title("Perguntas")
+
+        # Adicionar título
+        ttk.Label(
+            self.perguntas_window,
+            text="Resposta às perguntas do enunciado e mais algumas",
+            style='primary.Inverse.TLabel',
+            font=("Times New Roman", 20)
+        ).pack(pady=20)
+
+        # Botão para identificar rotas com mais passageiros
+        rotas_button = ttk.Button(
+            self.perguntas_window,
+            text="Identificar Rotas de Autocarro\ncom Maior Número de Passageiros",  # Quebra de linha com \n
+            command=self.identificar_rotas_maior_passageiros,
+            style="MenuButton.TButton",
+            width=30  # Aumenta a largura do botão
+        )
+        rotas_button.pack(pady=10)
+
+        tipos_autocarro_button = ttk.Button(
+            self.perguntas_window,
+            text="Identificar tipos de autocarro\ne respetivo condutor",
+            command=self.identificar_tipos_autocarro,
+            style="MenuButton.TButton",
+            width=30
+        )
+        tipos_autocarro_button.pack(pady=10)
+
+        paragens_button = ttk.Button(
+            self.perguntas_window,
+            text="Identificar Paragens com\nMaior Afluência de Passageiros",
+            command=self.identificar_paragens_maior_afluencia,
+            style="MenuButton.TButton",
+            width=30
+        )
+        paragens_button.pack(pady=10)
+
+        qualidade_ar_button = ttk.Button(
+            self.perguntas_window,
+            text="Analisar Qualidade do\nAr nas Paragens",
+            command=self.analisar_qualidade_ar,
+            style="MenuButton.TButton",
+            width=30
+        )
+        qualidade_ar_button.pack(pady=10)
+
+        velocidade_congestionamento_button = ttk.Button(
+            self.perguntas_window,
+            text="Identificar Velocidade Média\ne Congestionamento",
+            command=self.calcular_velocidade_congestionamento,
+            style="MenuButton.TButton",
+            width=30
+        )
+        velocidade_congestionamento_button.pack(pady=10)
+
+        veiculos_segmentos_button = ttk.Button(
+                self.perguntas_window,
+                text="Identificar Veículos e Segmentos",
+                command=self.listar_veiculos_por_segmento,
+                style="MenuButton.TButton",
+                width=30
+            )
+        veiculos_segmentos_button.pack(pady=10)
+
+        estacionamento_button = ttk.Button(
+                self.perguntas_window,
+                text="Identificar Estacionamentos",
+                command=self.ocupacao_estacionameto,
+                style="MenuButton.TButton",
+                width=30
+            )
+        estacionamento_button.pack(pady=10)
+
+
+
+
+
+
+    def identificar_rotas_maior_passageiros(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para identificar as rotas com maior número de passageiros
+            query = """
+                SELECT rp.linha_id AS rota,
+                        SUM(pp.quantidade_pessoas) AS total_passageiros_2_meses
+                FROM 
+                    rotas_paragens rp
+                    JOIN 
+                        pessoas_paragem pp ON rp.paragem_id = pp.paragem_id
+                        GROUP BY 
+                            rp.linha_id
+                                ORDER BY 
+                                    total_passageiros_2_meses DESC;
+            """
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Exibir resultados
+            if resultados:
+                resultado_texto = "Rotas com Maior Número de Passageiros:\n\n"
+                for linha in resultados:
+                    resultado_texto += f"Rota {linha[0]}: {linha[1]} passageiros\n"
+                messagebox.showinfo("Resultados", resultado_texto)
+            else:
+                messagebox.showinfo("Resultados", "Nenhuma rota encontrada com passageiros.")
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao identificar rotas: {e}")
+
+    def identificar_tipos_autocarro(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para identificar os tipos de autocarro e respetivos condutores
+            query = """
+            SELECT
+                a.matricula,
+                a.combustivel,
+                c.nome AS condutor_nome,
+                CASE
+                    WHEN a.combustivel = 'elétrico' THEN 'Elétrico'
+                    WHEN a.combustivel = 'Diesel' THEN 'Diesel'
+                    WHEN a.combustivel = 'gasolina' THEN 'Gasolina'
+                    WHEN a.combustivel = 'Híbrido' THEN 'Híbrido'
+                END AS tipo_combustivel
+            FROM 
+                autocarros a
+            JOIN 
+                condutores_autocarros ca ON a.matricula = ca.matricula
+            JOIN 
+                condutores c ON ca.cartao_cidadao = c.cartao_cidadao
+            ORDER BY 
+                tipo_combustivel DESC, a.matricula;
+            """
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar nova janela para exibir a tabela
+            self.table_window = tk.Toplevel(self.root)
+            self.table_window.title("Autocarros e Condutores")
+            self.table_window.geometry("800x600")
+
+            # Criar o Treeview (tabela) para exibir os resultados
+            treeview = ttk.Treeview(self.table_window, columns=(
+                "Matrícula", "Combustível", "Condutor", "Tipo de Combustível"), show="headings")
+            treeview.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Matrícula", text="Matrícula")
+            treeview.heading("Combustível", text="Combustível")
+            treeview.heading("Condutor", text="Condutor")
+            treeview.heading("Tipo de Combustível", text="Tipo de Combustível")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(self.table_window, orient="vertical", command=treeview.yview)
+            treeview.configure(yscrollcommand=scrollbar.set)
+            scrollbar.grid(row=0, column=4, sticky="ns", padx=10)
+
+            # Número de linhas a serem exibidas por "página"
+            num_linhas_por_pagina = 50
+            total_linhas = len(resultados)
+
+            def mostrar_pagina(pagina):
+                """ Função para mostrar as linhas de acordo com a página selecionada """
+                for item in treeview.get_children():
+                    treeview.delete(item)
+
+                # Limitar a quantidade de linhas por página
+                start = pagina * num_linhas_por_pagina
+                end = start + num_linhas_por_pagina
+                for i in range(start, min(end, total_linhas)):
+                    matricula, combustivel, condutor_nome, tipo_combustivel = resultados[i]
+                    treeview.insert("", "end", values=(matricula, combustivel, condutor_nome, tipo_combustivel))
+
+            # Variável para armazenar a página atual
+            pagina_atual = 0
+            mostrar_pagina(pagina_atual)
+
+            # Botões para navegação
+            nav_frame = tk.Frame(self.table_window)
+            nav_frame.grid(row=1, column=0, columnspan=3, pady=10)
+
+            def proxima_pagina():
+                nonlocal pagina_atual
+                if (pagina_atual + 1) * num_linhas_por_pagina < total_linhas:
+                    pagina_atual += 1
+                    mostrar_pagina(pagina_atual)
+
+            def pagina_anterior():
+                nonlocal pagina_atual
+                if pagina_atual > 0:
+                    pagina_atual -= 1
+                    mostrar_pagina(pagina_atual)
+
+            # Botões de navegação
+            prev_button = ttk.Button(nav_frame, text="Página Anterior", command=pagina_anterior)
+            prev_button.pack(side="left", padx=5)
+
+            next_button = ttk.Button(nav_frame, text="Próxima Página", command=proxima_pagina)
+            next_button.pack(side="left", padx=5)
+
+            # Desabilitar o botão "Próxima Página" se não houver mais páginas
+            if total_linhas <= num_linhas_por_pagina:
+                next_button.config(state="disabled")
+
+            # Desabilitar o botão "Página Anterior" se estiver na primeira página
+            if pagina_atual == 0:
+                prev_button.config(state="disabled")
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+
+    def identificar_paragens_maior_afluencia(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para identificar as paragens com maior afluência de passageiros
+            query = """
+                SELECT p.nome AS paragem, SUM(pp.quantidade_pessoas) AS total_passageiros_2_meses
+                FROM 
+                    paragens p
+                JOIN 
+                    pessoas_paragem pp ON p.paragem_id = pp.paragem_id
+                GROUP BY 
+                    p.nome
+                ORDER BY 
+                    total_passageiros_2_meses DESC;
+            """
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.table_window = tk.Toplevel(self.root)
+            self.table_window.title("Paragens com Maior Afluência de Passageiros")
+            self.table_window.geometry("900x600")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.table_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=("Paragem", "Total de Passageiros"), show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Paragem", text="Paragem")
+            treeview.heading("Total de Passageiros", text="Total de Passageiros")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=treeview.yview)
+            scrollbar.pack(side="right", fill="y")
+            treeview.configure(yscrollcommand=scrollbar.set)
+
+            # Número de linhas a serem exibidas por "página"
+            num_linhas_por_pagina = 50
+            total_linhas = len(resultados)
+
+            def mostrar_pagina(pagina):
+                """ Função para mostrar as linhas de acordo com a página selecionada """
+                for item in treeview.get_children():
+                    treeview.delete(item)
+
+                # Limitar a quantidade de linhas por página
+                start = pagina * num_linhas_por_pagina
+                end = start + num_linhas_por_pagina
+                for i in range(start, min(end, total_linhas)):
+                    paragem, total_passageiros = resultados[i]
+                    treeview.insert("", "end", values=(paragem, total_passageiros))
+
+            # Variável para armazenar a página atual
+            pagina_atual = 0
+            mostrar_pagina(pagina_atual)
+
+            # Botões para navegação
+            nav_frame = tk.Frame(self.table_window)
+            nav_frame.pack(fill="x", padx=10, pady=5)
+
+            def proxima_pagina():
+                nonlocal pagina_atual
+                if pagina_atual * num_linhas_por_pagina + num_linhas_por_pagina < total_linhas:
+                    pagina_atual += 1
+                    mostrar_pagina(pagina_atual)
+
+            def pagina_anterior():
+                nonlocal pagina_atual
+                if pagina_atual > 0:
+                    pagina_atual -= 1
+                    mostrar_pagina(pagina_atual)
+
+            # Botões de navegação
+            prev_button = ttk.Button(nav_frame, text="Página Anterior", command=pagina_anterior)
+            prev_button.pack(side="left", padx=5)
+
+            next_button = ttk.Button(nav_frame, text="Próxima Página", command=proxima_pagina)
+            next_button.pack(side="left", padx=5)
+
+            # Desabilitar o botão "Próxima Página" se não houver mais páginas
+            if total_linhas <= num_linhas_por_pagina:
+                next_button.config(state="disabled")
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao identificar paragens: {e}")
+
+    def analisar_qualidade_ar(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta SQL para juntar os dados ambientais e as paragens
+            query = """
+                SELECT p.nome AS paragem, 
+                       da.temperatura, 
+                       da.co2, 
+                       da.co, 
+                       da.no2, 
+                       da.o3, 
+                       da.pm10, 
+                       da.humidade, 
+                       da.hora
+                FROM 
+                    dados_ambientais da
+                JOIN 
+                    paragens p ON da.paragem_id = p.paragem_id
+                ORDER BY 
+                    da.hora DESC; 
+            """
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.table_window = tk.Toplevel(self.root)
+            self.table_window.title("Análise da Qualidade do Ar nas Paragens")
+            self.table_window.geometry("900x600")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.table_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=(
+            "Paragem", "Temperatura", "CO2", "CO", "NO2", "O3", "PM10", "Humidade", "Hora"), show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Paragem", text="Paragem")
+            treeview.heading("Temperatura", text="Temperatura (°C)")
+            treeview.heading("CO2", text="CO2 (ppm)")
+            treeview.heading("CO", text="CO (ppm)")
+            treeview.heading("NO2", text="NO2 (ppm)")
+            treeview.heading("O3", text="O3 (ppm)")
+            treeview.heading("PM10", text="PM10 (µg/m³)")
+            treeview.heading("Humidade", text="Humidade (%)")
+            treeview.heading("Hora", text="Hora da Medição")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=treeview.yview)
+            scrollbar.pack(side="right", fill="y")
+            treeview.configure(yscrollcommand=scrollbar.set)
+
+            # Número de linhas a serem exibidas por "página"
+            num_linhas_por_pagina = 50
+            total_linhas = len(resultados)
+
+            def mostrar_pagina(pagina):
+                """ Função para mostrar as linhas de acordo com a página selecionada """
+                for item in treeview.get_children():
+                    treeview.delete(item)
+
+                # Limitar a quantidade de linhas por página
+                start = pagina * num_linhas_por_pagina
+                end = start + num_linhas_por_pagina
+                for i in range(start, min(end, total_linhas)):
+                    paragem, temperatura, co2, co, no2, o3, pm10, humidade, hora = resultados[i]
+                    treeview.insert("", "end", values=(paragem, temperatura, co2, co, no2, o3, pm10, humidade, hora))
+
+            # Variável para armazenar a página atual
+            pagina_atual = 0
+            mostrar_pagina(pagina_atual)
+
+            # Botões para navegação
+            nav_frame = tk.Frame(self.table_window)
+            nav_frame.pack(fill="x", padx=10, pady=5)
+
+            def proxima_pagina():
+                nonlocal pagina_atual
+                if pagina_atual * num_linhas_por_pagina + num_linhas_por_pagina < total_linhas:
+                    pagina_atual += 1
+                    mostrar_pagina(pagina_atual)
+
+            def pagina_anterior():
+                nonlocal pagina_atual
+                if pagina_atual > 0:
+                    pagina_atual -= 1
+                    mostrar_pagina(pagina_atual)
+
+            # Botões de navegação
+            prev_button = ttk.Button(nav_frame, text="Página Anterior", command=pagina_anterior)
+            prev_button.pack(side="left", padx=5)
+
+            next_button = ttk.Button(nav_frame, text="Próxima Página", command=proxima_pagina)
+            next_button.pack(side="left", padx=5)
+
+            # Desabilitar o botão "Próxima Página" se não houver mais páginas
+            if total_linhas <= num_linhas_por_pagina:
+                next_button.config(state="disabled")
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao analisar qualidade do ar: {e}")
+
+    def calcular_velocidade_congestionamento(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta SQL para calcular a velocidade dos veículos por segmento de rua, incluindo o nome da rua
+            query = """
+                            SELECT 
+				r.nome AS rua,
+                s.segmento_id,
+                AVG(v.velocidades) AS velocidade_media
+            FROM 
+                velocidades v
+            JOIN 
+                segmentos s ON v.segmento_id = s.segmento_id
+            JOIN 
+                ruas r ON s.rua_id = r.rua_id
+            GROUP BY 
+                s.segmento_id, r.nome
+            ORDER BY 
+                velocidade_media ASC;
+
+            """
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir os resultados
+            self.table_window = tk.Toplevel(self.root)
+            self.table_window.title("Velocidade dos Veículos por Segmento de Rua")
+            self.table_window.geometry("900x600")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.table_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=("Segmento", "Rua", "Velocidade Média (km/h)"), show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Segmento", text="Segmento")
+            treeview.heading("Rua", text="Rua")
+            treeview.heading("Velocidade Média (km/h)", text="Velocidade Média (km/h)")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=treeview.yview)
+            scrollbar.pack(side="right", fill="y")
+            treeview.configure(yscrollcommand=scrollbar.set)
+
+            # Número de linhas a serem exibidas por "página"
+            num_linhas_por_pagina = 50
+            total_linhas = len(resultados)
+
+            def mostrar_pagina(pagina):
+                """ Função para mostrar as linhas de acordo com a página selecionada """
+                for item in treeview.get_children():
+                    treeview.delete(item)
+
+                # Limitar a quantidade de linhas por página
+                start = pagina * num_linhas_por_pagina
+                end = start + num_linhas_por_pagina
+                for i in range(start, min(end, total_linhas)):
+                    segmento_id, rua, velocidade_media = resultados[i]
+                    # Convertendo a velocidade média para km/h
+                    velocidade_media_kmh = velocidade_media  # Se os dados já estiverem em km/h
+                    treeview.insert("", "end", values=(segmento_id, rua, round(velocidade_media_kmh, 2)))
+
+            # Variável para armazenar a página atual
+            pagina_atual = 0
+            mostrar_pagina(pagina_atual)
+
+            # Botões para navegação
+            nav_frame = tk.Frame(self.table_window)
+            nav_frame.pack(fill="x", padx=10, pady=5)
+
+            def proxima_pagina():
+                nonlocal pagina_atual
+                if pagina_atual * num_linhas_por_pagina + num_linhas_por_pagina < total_linhas:
+                    pagina_atual += 1
+                    mostrar_pagina(pagina_atual)
+
+            def pagina_anterior():
+                nonlocal pagina_atual
+                if pagina_atual > 0:
+                    pagina_atual -= 1
+                    mostrar_pagina(pagina_atual)
+
+            # Botões de navegação
+            prev_button = ttk.Button(nav_frame, text="Página Anterior", command=pagina_anterior)
+            prev_button.pack(side="left", padx=5)
+
+            next_button = ttk.Button(nav_frame, text="Próxima Página", command=proxima_pagina)
+            next_button.pack(side="left", padx=5)
+
+            # Desabilitar o botão "Próxima Página" se não houver mais páginas
+            if total_linhas <= num_linhas_por_pagina:
+                next_button.config(state="disabled")
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao calcular a velocidade nos segmentos de rua: {e}")
+
+    def listar_veiculos_por_segmento(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para listar os tipos de veículos e quantificar o tráfego
+            query = """
+            SELECT 
+                s.segmento_id,
+                r.nome AS rua,
+                ve.tipo AS tipo_veiculo,
+                COUNT(v.matricula) AS quantidade_veiculos_tipo,
+                (SELECT COUNT(*) 
+                 FROM velocidades v2 
+                 WHERE v2.segmento_id = s.segmento_id) AS total_trafego_segmento
+            FROM 
+                velocidades v
+            JOIN 
+                veiculos ve ON v.matricula = ve.matricula
+            JOIN 
+                segmentos s ON s.segmento_id = v.segmento_id
+            JOIN 
+                ruas r ON r.rua_id = s.rua_id
+            GROUP BY 
+                r.nome, s.segmento_id, ve.tipo
+            ORDER BY 
+                s.segmento_id, quantidade_veiculos_tipo DESC;
+            """
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.resultados_window = tk.Toplevel(self.root)
+            self.resultados_window.title("Tipos de Veículos e Tráfego por Segmento")
+            self.resultados_window.geometry("900x600")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.resultados_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=("Segmento ID", "Rua", "Tipo de Veículo", "Quantidade de Veículos", "Total Tráfego"), show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Segmento ID", text="Segmento ID")
+            treeview.heading("Rua", text="Rua")
+            treeview.heading("Tipo de Veículo", text="Tipo de Veículo")
+            treeview.heading("Quantidade de Veículos", text="Quantidade de Veículos")
+            treeview.heading("Total Tráfego", text="Total de Tráfego")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(frame, orient="vertical", command=treeview.yview)
+            scrollbar.pack(side="right", fill="y")
+            treeview.configure(yscrollcommand=scrollbar.set)
+
+            # Preencher a tabela com os resultados
+            for linha in resultados:
+                segmento_id, rua, tipo_veiculo, quantidade_veiculos_tipo, total_trafego_segmento = linha
+                treeview.insert("", "end", values=(segmento_id, rua, tipo_veiculo, quantidade_veiculos_tipo, total_trafego_segmento))
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+
+    def ocupacao_estacionameto(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para monitorizar a taxa de ocupação dos estacionamentos
+            query = """
+                    SELECT 
+            e.nome AS estacionamento,
+            e.tipo AS tipo_estacionamento,
+            r.nome AS rua,
+            COUNT(l.lugar_id) AS total_lugares,
+            SUM(CASE WHEN l.ocupaçao = 1 THEN 1 ELSE 0 END) AS lugares_ocupados,
+            (SUM(CASE WHEN l.ocupaçao = 1 THEN 1 ELSE 0 END) * 100.0 / e.capacidade) AS taxa_ocupacao
+        FROM 
+            estacionamento e
+        JOIN 
+            ruas r ON r.rua_id = e.rua_id
+        JOIN 
+            lugares l ON l.estacionamento_id = e.estacionamento_id
+        GROUP BY 
+            e.nome, e.tipo, r.nome, e.capacidade
+        ORDER BY 
+            taxa_ocupacao DESC;
+            """
+
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.resultados_window = tk.Toplevel(self.root)
+            self.resultados_window.title("Taxa de Ocupação dos Estacionamentos")
+            self.resultados_window.geometry("900x600")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.resultados_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=(
+                "Estacionamento", "Tipo", "Rua", "Total Lugares", "Lugares Ocupados", "Taxa de Ocupação"),
+                                    show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Estacionamento", text="Estacionamento")
+            treeview.heading("Tipo", text="Tipo de Estacionamento")
+            treeview.heading("Rua", text="Rua")
+            treeview.heading("Total Lugares", text="Total de Lugares")
+            treeview.heading("Lugares Ocupados", text="Lugares Ocupados")
+            treeview.heading("Taxa de Ocupação", text="Taxa de Ocupação (%)")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(self.resultados_window, orient="vertical", command=treeview.yview)
+            treeview.configure(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
+
+            # Preencher a tabela com os resultados
+            for linha in resultados:
+                estacionamento, tipo, rua, total_lugares, lugares_ocupados, taxa_ocupacao = linha
+                treeview.insert("", "end", values=(
+                estacionamento, tipo, rua, total_lugares, lugares_ocupados, f"{taxa_ocupacao:.2f}%"))
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
 
 
 if __name__ == "__main__":
