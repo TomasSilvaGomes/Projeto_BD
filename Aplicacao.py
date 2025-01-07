@@ -25,7 +25,6 @@ class DatabaseApp:
             # Substitua 'image.png' pelo caminho da sua imagem
             self.image = PhotoImage(file="BD.png")
             image_label = tk.Label(self.home_frame, image=self.image)
-            #put the image in 1920x1080
             image_label.place(relwidth=1, relheight=1)
 
         except Exception as e:
@@ -403,8 +402,7 @@ class DatabaseApp:
                             # Fetch columns of the selected table, excluding those starting with 'id'
                             self.cursor.execute(
                                 f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{selected_table}'")
-                            columns = [row.COLUMN_NAME for row in self.cursor.fetchall() if
-                                       not row.COLUMN_NAME.lower().startswith('id')]
+                            columns = [row.COLUMN_NAME for row in self.cursor.fetchall() if row.COLUMN_NAME.lower() != 'id']
 
                             # Clear previous widgets
                             for widget in input_frame.winfo_children():
@@ -494,6 +492,7 @@ class DatabaseApp:
     def show_perguntas(self):
         # nova interface é fullscreen e não tem barra de título
         self.root.attributes("-fullscreen", True)
+
         def exit_fullscreen(event):
             self.root.attributes("-fullscreen", False)
 
@@ -515,74 +514,100 @@ class DatabaseApp:
             font=("Times New Roman", 20)
         ).pack(pady=20)
 
-        # Botão para identificar rotas com mais passageiros
+        # Frame para os botões, utilizando grid para organizar na horizontal
+        buttons_frame = tk.Frame(self.perguntas_window)
+        buttons_frame.pack(pady=20)
+
+        # Criar botões na horizontal, utilizando o método grid para alinhá-los lado a lado
         rotas_button = ttk.Button(
-            self.perguntas_window,
-            text="Identificar Rotas de Autocarro\ncom Maior Número de Passageiros",  # Quebra de linha com \n
+            buttons_frame,
+            text="Identificar Rotas de Autocarro\ncom Maior Número de Passageiros",
             command=self.identificar_rotas_maior_passageiros,
             style="MenuButton.TButton",
-            width=30  # Aumenta a largura do botão
+            width=30
         )
-        rotas_button.pack(pady=10)
+        rotas_button.grid(row=0, column=0, padx=10, pady=10)
 
         tipos_autocarro_button = ttk.Button(
-            self.perguntas_window,
+            buttons_frame,
             text="Identificar tipos de autocarro\ne respetivo condutor",
             command=self.identificar_tipos_autocarro,
             style="MenuButton.TButton",
             width=30
         )
-        tipos_autocarro_button.pack(pady=10)
+        tipos_autocarro_button.grid(row=0, column=1, padx=10, pady=10)
 
         paragens_button = ttk.Button(
-            self.perguntas_window,
+            buttons_frame,
             text="Identificar Paragens com\nMaior Afluência de Passageiros",
             command=self.identificar_paragens_maior_afluencia,
             style="MenuButton.TButton",
             width=30
         )
-        paragens_button.pack(pady=10)
+        paragens_button.grid(row=0, column=2, padx=10, pady=10)
 
         qualidade_ar_button = ttk.Button(
-            self.perguntas_window,
+            buttons_frame,
             text="Analisar Qualidade do\nAr nas Paragens",
             command=self.analisar_qualidade_ar,
             style="MenuButton.TButton",
             width=30
         )
-        qualidade_ar_button.pack(pady=10)
+        qualidade_ar_button.grid(row=0, column=3, padx=10, pady=10)
 
         velocidade_congestionamento_button = ttk.Button(
-            self.perguntas_window,
+            buttons_frame,
             text="Identificar Velocidade Média\ne Congestionamento",
             command=self.calcular_velocidade_congestionamento,
             style="MenuButton.TButton",
             width=30
         )
-        velocidade_congestionamento_button.pack(pady=10)
+        velocidade_congestionamento_button.grid(row=0, column=4, padx=10, pady=10)
 
         veiculos_segmentos_button = ttk.Button(
-                self.perguntas_window,
-                text="Identificar Veículos e Segmentos",
-                command=self.listar_veiculos_por_segmento,
-                style="MenuButton.TButton",
-                width=30
-            )
-        veiculos_segmentos_button.pack(pady=10)
+            buttons_frame,
+            text="Identificar Veículos e Segmentos",
+            command=self.listar_veiculos_por_segmento,
+            style="MenuButton.TButton",
+            width=30
+        )
+        veiculos_segmentos_button.grid(row=1, column=0, padx=10, pady=10)
 
         estacionamento_button = ttk.Button(
-                self.perguntas_window,
-                text="Identificar Estacionamentos",
-                command=self.ocupacao_estacionameto,
-                style="MenuButton.TButton",
-                width=30
-            )
-        estacionamento_button.pack(pady=10)
+            buttons_frame,
+            text="Identificar Estacionamentos",
+            command=self.ocupacao_estacionameto,
+            style="MenuButton.TButton",
+            width=30
+        )
+        estacionamento_button.grid(row=1, column=1, padx=10, pady=10)
 
+        velocidade_media_button = ttk.Button(
+            buttons_frame,
+            text="Identificar Velocidade Média",
+            command=self.velocidade_media_veiculos,
+            style="MenuButton.TButton",
+            width=30
+        )
+        velocidade_media_button.grid(row=1, column=2, padx=10, pady=10)
 
+        rotas_paragens_button = ttk.Button(
+            buttons_frame,
+            text="Identificar Rotas e Paragens",
+            command=self.rotas_com_paragens,
+            style="MenuButton.TButton",
+            width=30
+        )
+        rotas_paragens_button.grid(row=1, column=3, padx=10, pady=10)
 
-
-
+        paragens_poluentes_button = ttk.Button(
+            buttons_frame,
+            text="Identificar Paragens Poluentes",
+            command=self.paragens_com_alto_co2,
+            style="MenuButton.TButton",
+            width=30
+        )
+        paragens_poluentes_button.grid(row=1, column=4, padx=10, pady=10)
 
     def identificar_rotas_maior_passageiros(self):
         if not self.conn or not self.cursor:
@@ -1152,6 +1177,174 @@ class DatabaseApp:
                 estacionamento, tipo, rua, total_lugares, lugares_ocupados, taxa_ocupacao = linha
                 treeview.insert("", "end", values=(
                 estacionamento, tipo, rua, total_lugares, lugares_ocupados, f"{taxa_ocupacao:.2f}%"))
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+
+    def velocidade_media_veiculos(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para calcular a velocidade média dos veículos
+            query = """
+                SELECT 
+    ve.matricula, 
+    ve.marca,
+    ve.tipo,
+    AVG(vel.velocidades) AS velocidade_media
+FROM 
+    velocidades vel
+JOIN 
+    veiculos ve ON vel.matricula = ve.matricula
+GROUP BY 
+    ve.matricula, ve.marca, ve.tipo
+ORDER BY 
+                velocidade_media DESC;
+
+            """
+
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.resultados_window = tk.Toplevel(self.root)
+            self.resultados_window.title("Velocidade Média dos Veículos")
+            self.resultados_window.geometry("900x600")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.resultados_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=("Matricula", "Marca", "Tipo", "Velocidade Média"),
+                                    show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Matricula", text="Matrícula")
+            treeview.heading("Marca", text="Marca")
+            treeview.heading("Tipo", text="Tipo")
+            treeview.heading("Velocidade Média", text="Velocidade Média (km/h)")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(self.resultados_window, orient="vertical", command=treeview.yview)
+            treeview.configure(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
+
+            # Preencher a tabela com os resultados
+            for linha in resultados:
+                matricula, marca, tipo, velocidade_media = linha
+                treeview.insert("", "end", values=(matricula, marca, tipo, f"{velocidade_media:.2f} km/h"))
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+
+    def rotas_com_paragens(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para contar o número de paragens por rota
+            query = """
+                SELECT 
+                    r.linha_id, 
+                    COUNT(rp.paragem_id) AS numero_paragens
+                FROM 
+                    rotas r
+                JOIN 
+                    rotas_paragens rp ON r.linha_id = rp.linha_id
+                GROUP BY 
+                    r.linha_id
+                ORDER BY 
+                    numero_paragens DESC;
+            """
+
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.resultados_window = tk.Toplevel(self.root)
+            self.resultados_window.title("Rotas e o Número de Paragens")
+            self.resultados_window.geometry("600x400")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.resultados_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=("Linha ID", "Número de Paragens"), show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Linha ID", text="Linha ID")
+            treeview.heading("Número de Paragens", text="Número de Paragens")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(self.resultados_window, orient="vertical", command=treeview.yview)
+            treeview.configure(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
+
+            # Preencher a tabela com os resultados
+            for linha in resultados:
+                linha_id, numero_paragens = linha
+                treeview.insert("", "end", values=(linha_id, numero_paragens))
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
+
+    def paragens_com_alto_co2(self):
+        if not self.conn or not self.cursor:
+            messagebox.showwarning("Aviso", "Conecte-se à base de dados antes de continuar.")
+            return
+
+        try:
+            # Consulta para encontrar paragens com CO2 maior que 400
+            query = """
+                SELECT 
+                    p.nome AS paragem,
+                    da.co2
+                FROM 
+                    dados_ambientais da
+                JOIN 
+                    paragens p ON da.paragem_id = p.paragem_id
+                WHERE 
+                    da.co2 > 450
+                ORDER BY 
+                    da.co2 DESC;
+            """
+
+            self.cursor.execute(query)
+            resultados = self.cursor.fetchall()
+
+            # Criar uma nova janela para exibir a tabela
+            self.resultados_window = tk.Toplevel(self.root)
+            self.resultados_window.title("Paragens com CO2 Alto")
+            self.resultados_window.geometry("600x400")
+
+            # Criar Frame para organizar o Treeview e a barra de rolagem
+            frame = tk.Frame(self.resultados_window)
+            frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+            # Criar Treeview para exibir os dados
+            treeview = ttk.Treeview(frame, columns=("Paragem", "CO2"), show="headings")
+            treeview.pack(side="left", fill="both", expand=True)
+
+            # Definir as colunas do Treeview
+            treeview.heading("Paragem", text="Paragem")
+            treeview.heading("CO2", text="Nível de CO2")
+
+            # Barra de rolagem
+            scrollbar = ttk.Scrollbar(self.resultados_window, orient="vertical", command=treeview.yview)
+            treeview.configure(yscrollcommand=scrollbar.set)
+            scrollbar.pack(side="right", fill="y")
+
+            # Preencher a tabela com os resultados
+            for linha in resultados:
+                paragem, co2 = linha
+                treeview.insert("", "end", values=(paragem, co2))
 
         except Exception as e:
             messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
