@@ -128,7 +128,7 @@ class DatabaseApp:
                                    style="MenuButton.TButton")
         update_button.pack(side="left", pady=20)
 
-        perguntas_button = ttk.Button(buttons_frame, text="Perguntas", command=self.show_perguntas,
+        perguntas_button = ttk.Button(buttons_frame, text="Informações", command=self.show_perguntas,
                                    style="MenuButton.TButton")
         perguntas_button.pack(side="left", pady=20)
 
@@ -327,7 +327,7 @@ class DatabaseApp:
         if self.cursor:
             try:
                 self.cursor.execute("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE'")
-                tables = [row.TABLE_NAME for row in self.cursor.fetchall()]
+                tables = [row.TABLE_NAME for row in self.cursor.fetchall() if row.TABLE_NAME.lower() != 'id']
 
                 def fetch_table_data():
                     selected_table = table_dropdown.get()
