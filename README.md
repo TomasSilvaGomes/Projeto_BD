@@ -60,7 +60,7 @@ O trabalho inclui:
 ## 🛠 Tecnologias Utilizadas
 
 - **Python**: `Tkinter`, `pyodbc`
-- **Microsoft SQL Server Management Studio (SSMS)`
+- **Microsoft SQL Server Management Studio (SSMS)**
 - **ERDPlus** (modelação E-R)
 - **CSV**: formato dos dados de entrada
 - **SQL**: implementação relacional
